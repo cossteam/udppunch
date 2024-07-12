@@ -21,8 +21,9 @@ build_all:
 
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build $(LDFLAGS) -o dist/$(CLIENT)-$(GOOS)-$(GOARCH) client/client.go)))
+	@echo ok
 
 clean:
-	@rm -rf dist
+	@rm -rf dist/punch-*
 
 .PHONY: all build build_all clean

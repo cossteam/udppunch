@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/yinheli/udppunch"
@@ -13,14 +14,12 @@ import (
 	"github.com/yinheli/udppunch/client/wg"
 )
 
-type Peer [32]byte
-
 var (
-	l          = log.New(os.Stdout, "", log.LstdFlags)
-	iface      = flag.String("iface", "wg0", "wireguard interface")
-	server     = flag.String("server", "", "udp punch server")
-	continuous = flag.Bool("continuous", false, "continuously resolve peers")
-	version    = flag.Bool("version", false, "show version")
+	l        = log.New(os.Stdout, "", log.LstdFlags)
+	iface    = flag.String("iface", "wg0", "wireguard interface")
+	server   = flag.String("server", "", "udp punch server")
+	interval = flag.Int("interval", 5, "interval time, 0 means not continuous")
+	version  = flag.Bool("version", false, "show version")
 )
 
 func main() {
@@ -42,27 +41,29 @@ func main() {
 		l.Fatal("iface is empty")
 	}
 
-	raddr, err := net.ResolveUDPAddr("udp", *server)
+	rAddr, err := net.ResolveUDPAddr("udp", *server)
 
 	if err != nil {
 		l.Fatal(err)
 	}
 
-	conn, err := net.DialUDP("udp", nil, raddr)
+	conn, err := net.DialUDP("udp", nil, rAddr)
 	if err != nil {
 		l.Fatal(err)
 	}
 
 	// handshake
-	go handshake(*raddr)
+	go handshake(*rAddr)
 
 	// wait for handshake
 	time.Sleep(time.Second * 2)
 
 	// resolve
+	var bak string
 	for {
 		clients, err := wg.GetEndpoints(*iface)
 		if err != nil {
+			bak = ""
 			l.Print("get endpoints error:", err)
 			time.Sleep(time.Second * 10)
 			continue
@@ -71,16 +72,23 @@ func main() {
 		data := make([]byte, 0, 1+len(clients)*32)
 		data = append(data, udppunch.ResolveType)
 
+		var arr []string
 		for client := range clients {
 			data = append(data, client[:]...)
+			arr = append(arr, client.String())
 		}
-		conn.Write(data)
+
+		if bak != strings.Join(arr, "++") {
+			bak = strings.Join(arr, "++")
+			_, _ = conn.Write(data)
+		}
 
 		buf := make([]byte, 4096)
 		n, err := conn.Read(buf)
 		if err != nil {
 			l.Print("read error: ", err)
 			time.Sleep(time.Second * 10)
+			continue
 		}
 
 		if n < 38 {
@@ -92,31 +100,30 @@ func main() {
 		for _, peer := range peers {
 			key, addr := peer.Parse()
 			if clients[key] == addr {
+				l.Print("already resolve ", key, " ", addr)
 				continue
 			}
-			l.Print("reslove ", key, " ", addr)
-			err = wg.SetPeerEndpoint(*iface, key, addr)
-			if err != nil {
+			l.Print("new resolve ", key, " ", addr)
+			if err = wg.SetPeerEndpoint(*iface, key, addr); err != nil {
 				l.Printf("set peer (%v) endpoint error: %v", key, err)
 				break
 			}
 		}
 
-		if err == nil && !*continuous {
+		if *interval == 0 {
 			break
 		} else {
-			// sleep for a while then continue resolve
-			time.Sleep(time.Second * 25)
+			time.Sleep(time.Second * time.Duration(*interval))
 		}
 	}
 }
 
-func handshake(raddr net.UDPAddr) {
+func handshake(rAddr net.UDPAddr) {
 	defer func() {
 		if x := recover(); x != nil {
 			l.Print("handshake error:", x)
 			time.Sleep(time.Second * 10)
-			handshake(raddr)
+			handshake(rAddr)
 		}
 	}()
 
@@ -135,7 +142,7 @@ func handshake(raddr net.UDPAddr) {
 			continue
 		}
 
-		doHandshake(raddr.IP, port, uint16(raddr.Port), pubKey)
+		doHandshake(rAddr.IP, port, uint16(rAddr.Port), pubKey)
 
 		time.Sleep(time.Second * 25)
 	}
@@ -149,11 +156,13 @@ func doHandshake(ip net.IP, srcPort uint16, dstPort uint16, pubKey udppunch.Key)
 		return
 	}
 
-	defer conn.Close()
+	defer func(conn *netx.UDPConn) {
+		_ = conn.Close()
+	}(conn)
 
 	data := make([]byte, 0, 32+1)
 	data = append(data, udppunch.HandshakeType)
 	data = append(data, pubKey[:]...)
 
-	conn.Write(data)
+	_, _ = conn.Write(data)
 }

@@ -15,7 +15,7 @@ import (
 
 var (
 	l       = log.New(os.Stdout, "", log.LstdFlags)
-	port    = flag.Int("port", 19993, "udp punch port")
+	port    = flag.Int("port", 56000, "udp punch port")
 	version = flag.Bool("version", false, "show version")
 )
 
@@ -60,7 +60,7 @@ func main() {
 
 	for {
 		buf := make([]byte, 1024*8)
-		n, raddr, err := conn.ReadFromUDP(buf)
+		n, rAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			panic(err)
 		}
@@ -69,13 +69,13 @@ func main() {
 			continue
 		}
 
-		// l.Printf("\nfrom:%v\n%s", raddr, hex.Dump(buf[:n]))
+		//l.Printf("from: %v -> %s \n", rAddr, hex.Dump(buf[:n]))
 
 		switch buf[0] {
 		case udppunch.HandshakeType:
 			var key udppunch.Key
 			copy(key[:], buf[1:])
-			peers.Add(key, udppunch.NewPeerFromAddr(key, raddr))
+			peers.Add(key, udppunch.NewPeerFromAddr(key, rAddr))
 		case udppunch.ResolveType:
 			data := make([]byte, 0, (n-1)/32*38)
 			for i := 1; i < n; i += 32 {
@@ -86,7 +86,7 @@ func main() {
 					data = append(data, peer[:]...)
 				}
 			}
-			conn.WriteToUDP(data, raddr)
+			_, _ = conn.WriteToUDP(data, rAddr)
 		}
 	}
 }

@@ -1,0 +1,90 @@
+services:
+  w0:
+    image: linuxserver/wireguard:legacy
+    container_name: w0
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      
+  w1:
+    image: linuxserver/wireguard:legacy
+    container_name: w1
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  w2:
+    image: linuxserver/wireguard:legacy
+    container_name: w2
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  w3:
+    image: linuxserver/wireguard:legacy
+    container_name: w3
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  w4:
+    image: linuxserver/wireguard:legacy
+    container_name: w4
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  w5:
+    image: linuxserver/wireguard:legacy
+    container_name: w5
+    volumes:
+      - ./dist:/dist
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+    working_dir: /dist
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
