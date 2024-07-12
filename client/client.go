@@ -73,9 +73,9 @@ func main() {
 		data = append(data, udppunch.ResolveType)
 
 		var arr []string
-		for client := range clients {
+		for client, endpoint := range clients {
 			data = append(data, client[:]...)
-			arr = append(arr, client.String())
+			arr = append(arr, client.String()+">>"+endpoint)
 		}
 
 		if bak != strings.Join(arr, "++") {
