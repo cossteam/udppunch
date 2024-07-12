@@ -1,9 +1,14 @@
 package udppunch
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 type Key [32]byte
@@ -52,4 +57,46 @@ func NewKeyFromStr(pubKey string) Key {
 
 func (t Key) String() string {
 	return base64.StdEncoding.EncodeToString(t[:])
+}
+
+func Exec(command string, args []string) (string, string, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
+}
+
+func JSONByte(str any) []byte {
+	jsonData, err := json.Marshal(str)
+	if err != nil {
+		return nil
+	}
+	return []byte(base64.StdEncoding.EncodeToString(jsonData))
+}
+
+func ByteJSON(str []byte) map[string]any {
+	val, _ := base64.StdEncoding.DecodeString(string(str))
+	var data map[string]any
+	err := json.Unmarshal(val, &data)
+	if err != nil {
+		return map[string]any{}
+	}
+	return data
+}
+
+func Kernel() string {
+	if output, _, err := Exec("uname", []string{"-srm"}); err == nil {
+		return strings.TrimSpace(output)
+	}
+	return ""
+}
+
+func Hostname() string {
+	if hostname, err := os.Hostname(); err == nil {
+		return strings.TrimSpace(hostname)
+	}
+	return ""
 }

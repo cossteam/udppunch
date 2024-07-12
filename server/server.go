@@ -74,7 +74,8 @@ func main() {
 		switch buf[0] {
 		case udppunch.HandshakeType:
 			var key udppunch.Key
-			copy(key[:], buf[1:])
+			copy(key[:], buf[1:33])
+			//data := udppunch.ByteJSON(buf[33:])
 			peers.Add(key, udppunch.NewPeerFromAddr(key, rAddr))
 		case udppunch.ResolveType:
 			data := make([]byte, 0, (n-1)/32*38)

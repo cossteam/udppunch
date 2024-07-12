@@ -19,6 +19,7 @@ var (
 	iface    = flag.String("iface", "wg0", "wireguard interface")
 	server   = flag.String("server", "", "udp punch server")
 	interval = flag.Int("interval", 5, "interval time, 0 means not continuous")
+	extra    = flag.String("extra", "", "extra data for handshake")
 	version  = flag.Bool("version", false, "show version")
 )
 
@@ -160,9 +161,16 @@ func doHandshake(ip net.IP, srcPort uint16, dstPort uint16, pubKey udppunch.Key)
 		_ = conn.Close()
 	}(conn)
 
-	data := make([]byte, 0, 32+1)
+	ext := udppunch.JSONByte(map[string]string{
+		"kernel":   udppunch.Kernel(),
+		"hostname": udppunch.Hostname(),
+		"extra":    *extra,
+	})
+
+	data := make([]byte, 0, 1+32+len(ext))
 	data = append(data, udppunch.HandshakeType)
 	data = append(data, pubKey[:]...)
+	data = append(data, ext...)
 
 	_, _ = conn.Write(data)
 }
