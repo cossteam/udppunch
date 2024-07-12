@@ -15,12 +15,13 @@ import (
 )
 
 var (
-	l        = log.New(os.Stdout, "", log.LstdFlags)
-	iface    = flag.String("iface", "wg0", "wireguard interface")
-	server   = flag.String("server", "", "udp punch server")
-	interval = flag.Int("interval", 5, "interval time, 0 means not continuous")
-	extra    = flag.String("extra", "", "extra data for handshake")
-	version  = flag.Bool("version", false, "show version")
+	l              = log.New(os.Stdout, "", log.LstdFlags)
+	iface          = flag.String("iface", "wg0", "wireguard interface")
+	server         = flag.String("server", "", "udp punch server")
+	interval       = flag.Int("interval", 5, "interval time, 0 means not continuous")
+	handshakeCycle = flag.Int("handshakeCycle", 25, "handshake cycle time")
+	extra          = flag.String("extra", "", "extra data for handshake")
+	version        = flag.Bool("version", false, "show version")
 )
 
 func main() {
@@ -145,7 +146,7 @@ func handshake(rAddr net.UDPAddr) {
 
 		doHandshake(rAddr.IP, port, uint16(rAddr.Port), pubKey)
 
-		time.Sleep(time.Second * 25)
+		time.Sleep(time.Second * time.Duration(*handshakeCycle))
 	}
 }
 
@@ -161,11 +162,15 @@ func doHandshake(ip net.IP, srcPort uint16, dstPort uint16, pubKey udppunch.Key)
 		_ = conn.Close()
 	}(conn)
 
-	ext := udppunch.JSONByte(map[string]string{
-		"kernel":   udppunch.Kernel(),
-		"hostname": udppunch.Hostname(),
-		"extra":    *extra,
-	})
+	var ext []byte
+	if *extra != "" {
+		ext = udppunch.JSONByte(map[string]string{
+			"kernel":   udppunch.Kernel(),
+			"hostname": udppunch.Hostname(),
+			"extra":    *extra,
+		})
+		extra = nil
+	}
 
 	data := make([]byte, 0, 1+32+len(ext))
 	data = append(data, udppunch.HandshakeType)

@@ -76,6 +76,12 @@ func main() {
 			var key udppunch.Key
 			copy(key[:], buf[1:33])
 			//data := udppunch.ByteJSON(buf[33:])
+			val, ok := peers.Get(key)
+			if !ok {
+				l.Printf("handshake: %v %s\n", key, rAddr)
+			} else if _, pAddr := val.(udppunch.Peer).Parse(); pAddr != rAddr.String() {
+				l.Printf("handshake: %v %s -> %s\n", key, pAddr, rAddr.String())
+			}
 			peers.Add(key, udppunch.NewPeerFromAddr(key, rAddr))
 		case udppunch.ResolveType:
 			data := make([]byte, 0, (n-1)/32*38)
